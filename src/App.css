@@ -12,12 +12,12 @@
 }
 
 .App-container {
-  display: grid;
-  grid-template-columns: 300px 20em;
-  grid-template-rows: 60px 450px;
-  grid-gap: 1.5em 1.5em;
-  place-content: center;
+  display: flex;
+  flex-flow: column nowrap;
+  align-items: center;
+  justify-content: center;
   min-height: 100vh;
+  padding: 1.5em 1em;
   font-size: calc(10px + 2vmin);
   color: white;
 }

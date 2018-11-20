@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import fp from 'lodash/function';
+import array from 'lodash/array';
 
 class Search extends Component {
     constructor(props) {
@@ -24,20 +25,21 @@ class Search extends Component {
 
     handleInput = (event) => {
         this.setState({query: event.target.value});
+        this.toggleResults(true);
         this.debouncedSearch();
       }
     
       handleSearchError = response => {
         let limitMessage = '';
     
-        if (response.status === 429) {
+        if (typeof response.status === 'undefined' || response.status === 429) {
           limitMessage = 'API requests per hour limit reached.'
         }
     
         this.setState(prevState => ({
-          errors: prevState.errors.concat(response.data),
           limitMessage: limitMessage
         }));
+        this.toggleResults(false);
         console.error('Error:', response.data);
       }
     
@@ -46,11 +48,12 @@ class Search extends Component {
     
         this.setState(prevState => ({
           currentResult: result,
-          results: [result].concat(prevState.results)
+          results: [result].concat(prevState.results),
+          limitMessage: ''
         }));
 
         this.props.updateGifs(result);
-    
+        this.toggleResults(false);
         this.saveResult(result);
         console.log('Search Response:', performance.now(), response.data);
       }
@@ -59,16 +62,34 @@ class Search extends Component {
         if (this.state.query === '') {
           return;
         }
-    
-        this.giphy.search(this.state.query)
-          .then(response => {
-            if (response.status !== 200) {
-              this.handleSearchError(response);
-            } else {
-              this.handleSearchSuccess(response);
-            }
-          })
-          .catch(error => console.error('Error:', error));
+
+        
+        if (!this.useCacheIfAvailable()) {
+            this.giphy.search(this.state.query)
+                .then(response => {
+                    if (response.status !== 200) {
+                    this.handleSearchError(response);
+                    } else {
+                    this.handleSearchSuccess(response);
+                    }
+                })
+                .catch(this.handleSearchError);
+        }
+      }
+
+      useCacheIfAvailable = () => {
+        let cachedResult = this.retrieveCachedResult();
+
+        if (cachedResult !== undefined) {
+            this.selectResult(cachedResult);
+            return true;
+        }
+
+        return false;
+      }
+
+      retrieveCachedResult = () => {
+          return array.head(this.state.results.filter(result => result.query === this.state.query));
       }
     
       getSavedResults() {
@@ -104,30 +125,35 @@ class Search extends Component {
         });
 
         this.props.updateGifs(result);
-        this.toggleResults();
-      }
-    
-      selectedResultClass = (result) => {
-        return result == this.state.currentResult ? 'result result-selected' : 'result';
+        this.toggleResults(false);
       }
 
-      toggleResults = () => {
-        this.setState(prevState => ({resultsActive: !prevState.resultsActive}));
+      toggleResults = active => {
+        this.setState(prevState => ({resultsActive: active}));
       }
+
+      moveSelectedResult = event => {
+
+      }
+
+      selectedResultClass = result => result === this.state.currentResult ? 'result result-selected' : 'result';
 
       getResultsClass = () => this.state.resultsActive ? 'results-container show' : 'results-container';
 
 
     render() {
         return (
-            <div className="search-container">
-                <input className="search interactable" type="text" placeholder="search for gifs" onChange={this.handleInput} value={this.state.query} onFocus={this.toggleResults}></input>
-                <ul className={this.getResultsClass()}>
-                    {this.state.results.map((result, index) => (
-                    <li key={index} className={this.selectedResultClass(result)} onClick={() => this.selectResult(result)}>{result.query}</li>
-                    ))}
-                </ul>
-            </div>           
+            <header>
+                <div className="search-container" onKeyDown={this.moveSelectedResult}>
+                    <input className="search interactable" type="text" placeholder="search for gifs" onChange={this.handleInput} onFocus={() => this.toggleResults(true)} onBlur={() => this.toggleResults(false)} value={this.state.query}></input>
+                    <ul className={this.getResultsClass()}>
+                        {this.state.results.map((result, index) => (
+                        <li key={index} className={this.selectedResultClass(result)} onMouseDown={() => this.selectResult(result)} tabIndex="1">{result.query}</li>
+                        ))}
+                    </ul>
+                </div>
+                {this.state.limitMessage.length > 0 && (<div className="limit">{this.state.limitMessage}</div>)}
+            </header>          
         )
     }
 }
