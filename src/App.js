@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-import giphy from './giphy';
+import giphy from './components/giphy';
 import array from 'lodash/array';
-import Search from './Search';
-import './App.css';
+import Search from './components/Search/Search';
+import Gif from './components/Gif/Gif';
 
 class App extends Component {
   constructor() {
@@ -49,30 +49,12 @@ class App extends Component {
     this.setState({currentGif: next});
   }
 
-  copyGIF = (gif) => {
-    var text = gif.bitly_url;
-    navigator.clipboard.writeText(text).then(function() {
-      console.log('Async: Copying to clipboard was successful!');
-    }, function(err) {
-      console.error('Async: Could not copy text: ', err);
-    });
-  }
-
   render() {
     return (
       <div className="App">
         <div className="App-container">
           <Search giphy={this.giphy} updateGifs={this.updateGifs} />
-          <div className="gif-container">
-              {this.state.currentGif && (
-                <video className="gif" autoPlay playsInline loop preload="auto" src={this.state.currentGif.images.preview.mp4}></video>
-              )}
-              <div className="controls">
-                <button className="interactable interactable-hover" disabled={this.state.currentGif === null} onClick={() => this.moveGif(-1)}>&laquo;&nbsp;Previous</button>
-                <button className="interactable interactable-hover" disabled={this.state.currentGif === null} onClick={() => this.moveGif(1)}>Next&nbsp;&raquo;</button>
-                <button className="interactable interactable-hover" disabled={this.state.currentGif === null} onClick={() => this.copyGIF(this.state.currentGif)}>Copy</button>
-              </div>
-          </div>
+          <Gif moveGif={this.moveGif} gif={this.state.currentGif} />
         </div>
       </div>
     );
