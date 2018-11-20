@@ -1,8 +1,18 @@
 import React from 'react';
 import './results.css';
 
-function Results({ results, current, active, selectResult}) {
-	const selectedResultClass = result => result === current ? 'result result-selected' : 'result';
+function Results({ results, current, active, selectResult, selectedResult}) {
+	const selectedResultClass = result => {
+		let resultClass = 'result ';
+		if (result === current) {
+			resultClass = 'result result-current';
+		}
+		if (result === selectedResult) {
+			resultClass = 'result result-selected';
+		}
+
+		return resultClass;
+	}
 
 	const resultsClass = active ? 'results-container show' : 'results-container';
 

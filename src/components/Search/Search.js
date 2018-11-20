@@ -2,16 +2,20 @@ import React, { Component } from 'react';
 import fp from 'lodash/function';
 import array from 'lodash/array';
 import Results from '../Results/Results';
+import ResultsCache from '../results-cache';
+
 import './search.css';
 
 class Search extends Component {
     constructor(props) {
         super(props);
 
+        this.cache = new ResultsCache();
         this.state = {
             errors: [],
-            results: [],
+            results: this.cache.getSavedResults(),
             currentResult: [],
+            selectedResult: null,
             resultsActive: false,
             query: '',
             limitMessage: '',
@@ -19,10 +23,6 @@ class Search extends Component {
 
         this.giphy = props.giphy;
         this.debouncedSearch = fp.debounce(this.populateSearch, 500);
-    }
-
-    componentDidMount() {
-        this.getSavedResults();
     }
 
     handleInput = (event) => {
@@ -44,9 +44,9 @@ class Search extends Component {
       this.toggleResults(false);
       console.error('Error:', response.data);
     }
-    
+
     handleSearchSuccess = response => {
-      let result = {query: this.state.query, data: response.data.data};
+      let result = {query: this.state.query, data: this.cache.refineData(response.data.data)};
   
       this.setState(prevState => ({
         currentResult: result,
@@ -56,7 +56,7 @@ class Search extends Component {
 
       this.props.updateGifs(result);
       this.toggleResults(false);
-      this.saveResult(result);
+      this.cache.saveResult(result);
       console.log('Search Response:', performance.now(), response.data);
     }
   
@@ -94,33 +94,7 @@ class Search extends Component {
         return array.head(this.state.results.filter(result => result.query === this.state.query));
     }
   
-    getSavedResults() {
-      try {
-        let count = localStorage.getItem('results-count');
-        let results = [];
-  
-        for (var i=0; i<count; i++) {
-          let result = JSON.parse(localStorage.getItem(`result-${i}`));
-          results.unshift(result);
-        }
-  
-        this.setState({results});
-      } catch (error) {
-        console.error(error);
-      }
-    }
-  
-    saveResult = (data) => {
-      try {
-        localStorage.setItem(`result-${this.state.results.length - 1}`, JSON.stringify(data));
-        localStorage.setItem(`results-count`, this.state.results.length);
-      } catch(error) {
-        console.error(error);
-      }
-    }
-  
     selectResult = (result) => {
-
       this.setState({
         currentResult: result,
         query: result.query
@@ -134,11 +108,34 @@ class Search extends Component {
       this.setState(prevState => ({resultsActive: active}));
     }
 
-    /* moveSelectedResult = direction => {
-      if (direction === 'up') {
-        this.setState(prevState => {currentResult: prevState.results});
+    previousResult(index) {
+      if (index <= 0) {
+        this.setState({selectedResult: array.tail(this.state.results)[0]})
+      } else {
+        this.setState({selectedResult: this.state.results[index - 1]})
       }
-    } */
+    }
+
+    nextResult(index) {
+      if (index >= this.state.results.length - 1) {
+        this.setState({selectedResult: array.head(this.state.results)[0]})
+      } else {
+        this.setState({selectedResult: this.state.results[index + 1]})
+      }
+    }
+
+    moveSelectedResult = direction => {
+      let index = this.state.results.indexOf(this.state.selectedResult);
+      this.toggleResults(true);
+      
+      if (direction === 'up') {
+        this.previousResult(index);
+      }
+
+      if (direction === 'down') {
+        this.nextResult(index);
+      }
+    }
 
     handleKeyNavigation = event => {
       if (event.defaultPrevented) {
@@ -154,15 +151,19 @@ class Search extends Component {
         this.moveSelectedResult('down');
       }
 
+      if (key === 'Enter' || key === '13') {
+        this.selectResult(this.state.selectedResult)
+      }
+
       return true;
     }
 
     render() {
         return (
             <header>
-                <div className="search-container" onKeyDown={this.moveSelectedResult}>
+                <div className="search-container" onKeyDown={this.handleKeyNavigation}>
                     <input className="search interactable" type="text" placeholder="search for gifs" onChange={this.handleInput} onFocus={() => this.toggleResults(true)} onBlur={() => this.toggleResults(false)} value={this.state.query}></input>
-                    <Results active={this.state.resultsActive} results={this.state.results} selectResult={this.selectResult} current={this.state.currentResult} />
+                    <Results active={this.state.resultsActive} results={this.state.results} selectResult={this.selectResult} current={this.state.currentResult} selectedResult={this.state.selectedResult} />
                 </div>
                 {this.state.limitMessage.length > 0 && (<div className="limit">{this.state.limitMessage}</div>)}
             </header>          

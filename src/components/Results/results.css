@@ -28,6 +28,10 @@
 }
 
 .result-selected {
+  background-color: var(--border);
+}
+
+.result-current {
   border-bottom: 2px solid var(--border-selected);
 }
 
