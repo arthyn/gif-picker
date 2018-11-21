@@ -1,0 +1,45 @@
+.results-container {
+  position: absolute;
+  display: none;
+  top: 2.38em;
+  left: 0;
+  width: 100%;
+  min-height: 1.7em;
+  max-height: 350px;
+  margin: 0;
+  padding: 0 1em;
+  text-align: left;
+  border: 2px solid var(--border);
+  background-color: #282c34;
+  overflow-y: auto;
+  z-index: 1;
+}
+
+.results-container.show {
+  display: block;
+}
+
+.result {
+  padding: .25em .5em;
+  list-style: none;
+  border-bottom: 2px solid var(--border);
+  transition: background-color .15s;
+  cursor: pointer;
+}
+
+.result-selected {
+  background-color: var(--border);
+}
+
+.result-current {
+  border-bottom: 2px solid var(--border-selected);
+}
+
+.result:hover,
+.result:focus {
+  background-color: var(--border-selected);
+}
+
+.result:last-child {
+  border-bottom: none;
+}
